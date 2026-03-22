@@ -28,15 +28,15 @@ pipeline{
 
         stage('SonarQube Analysis') {
             steps {
-                dir('app'){
-                    
+                dir('app') {
                     withSonarQubeEnv("${SONAR_SERVER}") {
-                        sh """
-                        mvn sonar:sonar \
-                        -Dsonar.projectKey=devops-project \
-                        -Dsonar.host.url=https://edgar-protectional-unrelentingly.ngrok-free.dev \
-                        -Dsonar.login=${SONAR_AUTH_TOKEN}
-                        """
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {
+                            sh """
+                            mvn sonar:sonar \
+                            -Dsonar.projectKey=devops-project \
+                            -Dsonar.login=$SONAR_AUTH_TOKEN
+                            """
+                        }
                     }
                 }
             }
