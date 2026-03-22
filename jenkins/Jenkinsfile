@@ -1,4 +1,4 @@
-pipeline {
+pipeline{
     agent any
 
     environment {
@@ -7,10 +7,6 @@ pipeline {
         ECR_REPO = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/devops-project"
         IMAGE_TAG = "${BUILD_NUMBER}"
         SONAR_SERVER = "sonar-server"
-    }
-
-    tools {
-        maven 'maven3'   // Configure in Jenkins → Global Tool Configuration
     }
 
     stages {
