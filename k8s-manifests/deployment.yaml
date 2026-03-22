@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: devops-container
-        image: 720035686659.dkr.ecr.ap-south-1.amazonaws.com/devops-project:46
+        image: 720035686659.dkr.ecr.ap-south-1.amazonaws.com/devops-project:47
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
