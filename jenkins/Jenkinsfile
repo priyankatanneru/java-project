@@ -79,31 +79,25 @@ pipeline{
         }
         stage('Update K8s Manifest (GitOps)') {
             when {
-                branch 'develop' // Only run on develop branch
+                branch 'develop'
             }
             steps {
-                // Bind your GitHub token stored in Jenkins credentials
                 withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
                     sh """
-                    # Update the image in deployment.yaml with the new ECR image tag
+                    # Update deployment image
                     sed -i "s|image:.*|image: $ECR_REPO:$IMAGE_TAG|" k8s-manifests/deployment.yaml
         
-                    # Configure Git user
                     git config --global user.name "jenkins"
                     git config --global user.email "jenkins@example.com"
         
-                    # Add changes
                     git add k8s-manifests/deployment.yaml
-        
-                    # Commit changes (if any)
                     git commit -m "Update image to $IMAGE_TAG" || echo "No changes to commit"
-        
-                    # Push changes to GitHub using token
+                    
                     git push https://priyankatanneru:$GITHUB_TOKEN@github.com/priyankatanneru/java-project.git HEAD:develop
                     """
                 }
             }
         }
-        
+                
     }
 }
