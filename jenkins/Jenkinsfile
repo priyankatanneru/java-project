@@ -77,23 +77,20 @@ pipeline{
                 sh "docker push $ECR_REPO:$IMAGE_TAG"
             }
         }
+        
         stage('Update K8s Manifest (GitOps)') {
             steps {
-                // Use a string credential for GitHub token
-                withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                    script {
-                        // Example: clone repo and update manifest
-                        sh '''
-                            git config --global user.email "jenkins@example.com"
-                            git config --global user.name "Jenkins CI"
-                            git clone https://$GITHUB_TOKEN@github.com/your-org/your-repo.git
-                            cd your-repo
-                            # Update your K8s manifests here, e.g., sed or yq
-                            git add .
-                            git commit -m "Update manifests via Jenkins pipeline"
-                            git push origin main
-                        '''
-                    }
+                withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_PASS')]) {
+                    sh '''
+                        git config --global user.email "jenkins@example.com"
+                        git config --global user.name "Jenkins CI"
+                        git clone https://$GITHUB_USER:$GITHUB_PASS@github.com/your-org/your-repo.git
+                        cd your-repo
+                        # Update your K8s manifests
+                        git add .
+                        git commit -m "Update manifests via Jenkins pipeline"
+                        git push origin main
+                    '''
                 }
             }
         }
