@@ -1,0 +1,55 @@
+- name: Install Java
+  apt:
+    name: openjdk-17-jdk
+    state: present
+    update_cache: yes
+
+- name: Install required packages
+  apt:
+    name:
+      - curl
+      - gnupg
+    state: present
+
+- name: Create keyrings directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Jenkins key
+  shell: |
+    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io.key -o /tmp/jenkins.key
+  args:
+    executable: /bin/bash
+
+- name: Convert key to gpg (non-interactive)
+  shell: |
+    gpg --dearmor --yes --batch -o /etc/apt/keyrings/jenkins.gpg /tmp/jenkins.key
+  args:
+    executable: /bin/bash
+
+- name: Add Jenkins repository (FINAL FIX)
+  shell: |
+    echo "deb [trusted=yes] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list
+  args:
+    executable: /bin/bash
+
+- name: Clean apt (important)
+  shell: |
+    rm -f /etc/apt/sources.list.d/jenkins.list.save || true
+    apt-get clean
+
+- name: Update apt cache
+  shell: apt-get update
+
+- name: Install Jenkins
+  apt:
+    name: jenkins
+    state: present
+
+- name: Start Jenkins service
+  service:
+    name: jenkins
+    state: started
+    enabled: true

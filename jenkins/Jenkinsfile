@@ -1,0 +1,115 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = "ap-south-1"
+        ACCOUNT_ID = "720035686659"
+        ECR_REPO = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/devops-project"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        SONAR_SERVER = "sonar-server"
+    }
+
+    tools {
+        maven 'maven3'   // Configure in Jenkins → Global Tool Configuration
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git branch: "${env.BRANCH_NAME}",
+                    url: 'https://github.com/priyankatanneru/java-project.git'
+            }
+        }
+
+        stage('Build (Maven)') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${SONAR_SERVER}") {
+                    sh """
+                    mvn sonar:sonar \
+                    -Dsonar.projectKey=devops-project \
+                    -Dsonar.host.url=http://<EC2-IP>:9000 \
+                    -Dsonar.login=${SONAR_AUTH_TOKEN}
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                }
+            }
+            steps {
+                sh """
+                docker build -t devops-project .
+                docker tag devops-project:latest $ECR_REPO:$IMAGE_TAG
+                """
+            }
+        }
+
+        stage('Login to ECR') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                }
+            }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    sh """
+                    aws ecr get-login-password --region $AWS_REGION | \
+                    docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                    """
+                }
+            }
+        }
+
+        stage('Push Image to ECR') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                }
+            }
+            steps {
+                sh "docker push $ECR_REPO:$IMAGE_TAG"
+            }
+        }
+
+        stage('Update K8s Manifest (GitOps)') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                sh """
+                sed -i "s|image:.*|image: $ECR_REPO:$IMAGE_TAG|" k8s-manifests/deployment.yaml
+
+                git config --global user.name "jenkins"
+                git config --global user.email "jenkins@example.com"
+
+                git add k8s-manifests/deployment.yaml
+                git commit -m "Update image to $IMAGE_TAG"
+
+                git push https://<your-username>:<your-token>@github.com/<your-username>/devops-project.git HEAD:develop
+                """
+            }
+        }
+    }
+}

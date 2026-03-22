@@ -1,0 +1,7 @@
+- name: Setup DevOps Tools
+  hosts: servers
+  become: yes
+
+  roles:
+    - docker
+    - jenkins
