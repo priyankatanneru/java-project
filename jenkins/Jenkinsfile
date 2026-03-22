@@ -77,7 +77,6 @@ pipeline{
                 sh "docker push $ECR_REPO:$IMAGE_TAG"
             }
         }
-        
         stage('Update K8s Manifest (GitOps)') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'github-creds', 
@@ -87,25 +86,33 @@ pipeline{
                         sh '''
                         git config --global user.email "jenkins@example.com"
                         git config --global user.name "Jenkins CI"
-                        
-                        # Clone repo
-                        git clone https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
+        
+                        # If repo exists, pull latest changes; else, clone
+                        if [ -d "java-project" ]; then
+                            cd java-project
+                            git reset --hard
+                            git clean -fd
+                            git pull https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
+                            cd ..
+                        else
+                            git clone https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
+                        fi
+        
                         cd java-project/k8s-manifests
-                        
+        
                         git add .
-                        
+        
                         # Commit only if there are changes
                         if git diff-index --quiet HEAD --; then
                             echo "No changes to commit"
                         else
                             git commit -m "Update K8s manifests via Jenkins"
-                            git push origin main
+                            git push https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
                         fi
                         '''
                     }
                 }
             }
-        }
-                
+        }        
     }
 }
