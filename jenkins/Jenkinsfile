@@ -100,7 +100,7 @@ pipeline{
                     fi
 
                     # Replace image tag with latest from ECR
-                    sed -i 's|image: .*|image: ${ECR_REPO}:${LATEST_TAG}|' deployment.yaml
+                    sed -i "s|image: .*|image: ${ECR_REPO}:${IMAGE_TAG}|" deployment.yaml
 
                     git add .
                     git commit -m "Update image to ${LATEST_TAG}" || echo "No changes to commit"
