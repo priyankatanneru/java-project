@@ -51,12 +51,6 @@ pipeline{
         }
 
         stage('Build Docker Image') {
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'main'
-                }
-            }
             steps {
                 dir('app'){
                     sh """
