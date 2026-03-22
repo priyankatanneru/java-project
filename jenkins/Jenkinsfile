@@ -78,9 +78,7 @@ pipeline{
             }
         }
         stage('Update K8s Manifest (GitOps)') {
-            when {
-                branch 'develop'
-            }
+            
             steps {
                 withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
                     sh """
