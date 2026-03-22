@@ -78,21 +78,22 @@ pipeline{
             }
         }
         stage('Update K8s Manifest (GitOps)') {
-            
             steps {
-                withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
-                    sh """
-                    # Update deployment image
-                    sed -i "s|image:.*|image: $ECR_REPO:$IMAGE_TAG|" k8s-manifests/deployment.yaml
-        
-                    git config --global user.name "jenkins"
-                    git config --global user.email "jenkins@example.com"
-        
-                    git add k8s-manifests/deployment.yaml
-                    git commit -m "Update image to $IMAGE_TAG" || echo "No changes to commit"
-                    
-                    git push https://priyankatanneru:$GITHUB_TOKEN@github.com/priyankatanneru/java-project.git HEAD:develop
-                    """
+                // Use a string credential for GitHub token
+                withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                    script {
+                        // Example: clone repo and update manifest
+                        sh '''
+                            git config --global user.email "jenkins@example.com"
+                            git config --global user.name "Jenkins CI"
+                            git clone https://$GITHUB_TOKEN@github.com/your-org/your-repo.git
+                            cd your-repo
+                            # Update your K8s manifests here, e.g., sed or yq
+                            git add .
+                            git commit -m "Update manifests via Jenkins pipeline"
+                            git push origin main
+                        '''
+                    }
                 }
             }
         }
