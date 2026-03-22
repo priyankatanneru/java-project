@@ -80,17 +80,29 @@ pipeline{
         
         stage('Update K8s Manifest (GitOps)') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_PASS')]) {
-                    sh '''
+                withCredentials([usernamePassword(credentialsId: 'github-creds', 
+                                                 usernameVariable: 'GITHUB_USER', 
+                                                 passwordVariable: 'GITHUB_PASS')]) {
+                    script {
+                        sh '''
                         git config --global user.email "jenkins@example.com"
                         git config --global user.name "Jenkins CI"
-                        git clone https://$GITHUB_USER:$GITHUB_PASS@github.com/your-org/your-repo.git
-                        cd your-repo
-                        # Update your K8s manifests
+                        
+                        # Clone repo
+                        git clone https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
+                        cd java-project/k8s-manifest
+                        
                         git add .
-                        git commit -m "Update manifests via Jenkins pipeline"
-                        git push origin main
-                    '''
+                        
+                        # Commit only if there are changes
+                        if git diff-index --quiet HEAD --; then
+                            echo "No changes to commit"
+                        else
+                            git commit -m "Update K8s manifests via Jenkins"
+                            git push origin main
+                        fi
+                        '''
+                    }
                 }
             }
         }
