@@ -73,12 +73,6 @@ pipeline{
         }
 
         stage('Push Image to ECR') {
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'main'
-                }
-            }
             steps {
                 sh "docker push $ECR_REPO:$IMAGE_TAG"
             }
