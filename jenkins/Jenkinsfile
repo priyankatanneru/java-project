@@ -13,7 +13,7 @@ pipeline{
 
         stage('Checkout Code') {
             steps {
-                git branch: "${env.BRANCH_NAME}",
+                git branch: 'main',
                     url: 'https://github.com/priyankatanneru/java-project.git'
             }
         }
