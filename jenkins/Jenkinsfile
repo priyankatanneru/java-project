@@ -20,19 +20,24 @@ pipeline{
 
         stage('Build (Maven)') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                dir('app'){
+                    sh 'mvn clean package -DskipTests'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv("${SONAR_SERVER}") {
-                    sh """
-                    mvn sonar:sonar \
-                    -Dsonar.projectKey=devops-project \
-                    -Dsonar.host.url=http://<EC2-IP>:9000 \
-                    -Dsonar.login=${SONAR_AUTH_TOKEN}
-                    """
+                dir('app'){
+                    
+                    withSonarQubeEnv("${SONAR_SERVER}") {
+                        sh """
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=devops-project \
+                        -Dsonar.host.url=https://edgar-protectional-unrelentingly.ngrok-free.dev \
+                        -Dsonar.login=${SONAR_AUTH_TOKEN}
+                        """
+                    }
                 }
             }
         }
@@ -53,10 +58,12 @@ pipeline{
                 }
             }
             steps {
-                sh """
-                docker build -t devops-project .
-                docker tag devops-project:latest $ECR_REPO:$IMAGE_TAG
-                """
+                dir('app'){
+                    sh """
+                    docker build -t devops-project .
+                    docker tag devops-project:latest $ECR_REPO:$IMAGE_TAG
+                    """
+                }
             }
         }
 
