@@ -77,42 +77,39 @@ pipeline{
                 sh "docker push $ECR_REPO:$IMAGE_TAG"
             }
         }
-        stage('Update K8s Manifest (GitOps)') {
+        stage('Update Manifests Repo') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github-creds', 
-                                                 usernameVariable: 'GITHUB_USER', 
-                                                 passwordVariable: 'GITHUB_PASS')]) {
-                    script {
-                        sh '''
-                        git config --global user.email "jenkins@example.com"
-                        git config --global user.name "Jenkins CI"
-        
-                        # If repo exists, pull latest changes; else, clone
-                        if [ -d "java-project" ]; then
-                            cd java-project
-                            git reset --hard
-                            git clean -fd
-                            git pull https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
-                            cd ..
-                        else
-                            git clone https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
-                        fi
-        
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-creds',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PASS'
+                )]) {
+                    sh """
+                    git config --global user.email "jenkins@example.com"
+                    git config --global user.name "Jenkins CI"
+
+                    # Clone or pull manifests repo
+                    if [ -d "java-project/k8s-manifests" ]; then
                         cd java-project/k8s-manifests
-        
-                        git add .
-        
-                        # Commit only if there are changes
-                        if git diff-index --quiet HEAD --; then
-                            echo "No changes to commit"
-                        else
-                            git commit -m "Update K8s manifests via Jenkins"
-                            git push https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
-                        fi
-                        '''
-                    }
+                        git reset --hard
+                        git clean -fd
+                        git pull https://$GIT_USER:$GIT_PASS@github.com/priyankatanneru/java-project.git
+                    else
+                        git clone https://$GIT_USER:$GIT_PASS@github.com/priyankatanneru/java-project.git
+                        cd java-project/k8s-manifests
+                    fi
+
+                    # Replace image tag with latest from ECR
+                    sed -i 's|image: .*|image: ${ECR_REPO}:${LATEST_TAG}|' deployment.yaml
+
+                    git add .
+                    git commit -m "Update image to ${LATEST_TAG}" || echo "No changes to commit"
+                    git push https://$GIT_USER:$GIT_PASS@github.com/priyankatanneru/java-project.git main
+                    """
                 }
             }
-        }        
+     
+        }     
+               
     }
 }
