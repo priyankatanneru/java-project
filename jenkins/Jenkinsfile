@@ -90,7 +90,7 @@ pipeline{
                         
                         # Clone repo
                         git clone https://$GITHUB_USER:$GITHUB_PASS@github.com/priyankatanneru/java-project.git
-                        cd java-project/k8s-manifest
+                        cd java-project/k8s-manifests
                         
                         git add .
                         
